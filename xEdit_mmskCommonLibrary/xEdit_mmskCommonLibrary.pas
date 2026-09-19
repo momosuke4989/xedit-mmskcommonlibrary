@@ -7,6 +7,7 @@ function ShowCheckboxForm(const options, disableOpts: TStringList; caption: stri
 function FormIDInputValidation(const s: string): Boolean;
 function EditorIDInputValidation(const s: string; useUnderScore: boolean): Boolean;
 function IsOfficialMaster(fileName: string): boolean;
+function ExtractLocalFormIDHex(const fullFormIDHex: string): string;
 function RemoveLeadingZeros(const s: string): string;
 function PadLeftZero(const s: string; targetLength: Integer): string;
 function FindRecordByRecordID(const recordID, signature: string; useFormID: boolean): IwbMainRecord;
@@ -226,6 +227,18 @@ begin
     SameText(fileName, 'ccBGSSSE025-AdvDSGS.esm')or
     SameText(fileName, 'ccBGSSSE037-Curios.esl') or
     SameText(fileName, 'ccQDRSSE001-SurvivalMode.esl');
+end;
+
+// フルFormID(8桁hex文字列。先頭2桁はロードオーダーindexまたはFEフラグ)から、
+// ファイル内ローカルなFormID部分(ゼロ詰めのまま)を抽出する
+// ESL/ESPFEフラグ付き(先頭2桁が'FE')の場合は下3桁を、通常のESP/ESMの場合は下6桁を返す
+// 先頭ゼロの除去が必要な場合は別途RemoveLeadingZerosを呼ぶこと
+function ExtractLocalFormIDHex(const fullFormIDHex: string): string;
+begin
+  if UpperCase(Copy(fullFormIDHex, 1, 2)) = 'FE' then
+    Result := Copy(fullFormIDHex, 6, 8)
+  else
+    Result := Copy(fullFormIDHex, 3, 8);
 end;
 
 function RemoveLeadingZeros(const s: string): string;
