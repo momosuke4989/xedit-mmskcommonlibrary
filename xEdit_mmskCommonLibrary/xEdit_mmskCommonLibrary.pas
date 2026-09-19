@@ -1,4 +1,4 @@
-unit mmskCommonLibrary;
+unit xEdit_mmskCommonLibrary;
 
 interface
 
@@ -6,7 +6,7 @@ function GetBoolSLValue(const key: string): Boolean;
 function ShowCheckboxForm(const options, disableOpts: TStringList; caption: string): Boolean;
 function FormIDInputValidation(const s: string): Boolean;
 function EditorIDInputValidation(const s: string; useUnderScore: boolean): Boolean;
-function IsMasterAEPlugin(plugin: IInterface): Boolean;
+function IsOfficialMaster(fileName: string): boolean;
 function RemoveLeadingZeros(const s: string): string;
 function PadLeftZero(const s: string; targetLength: Integer): string;
 function FindRecordByRecordID(const recordID, signature: string; useFormID: boolean): IwbMainRecord;
@@ -213,22 +213,20 @@ begin
   end;
 end;
 
-function IsMasterAEPlugin(plugin: IInterface): Boolean;
-var
-  pluginName  : String;
-Begin
-  pluginName := GetFileName(plugin);
-  Result := (CompareStr(pluginName, 'Skyrim.esm') = 0) or
-            (CompareStr(pluginName, 'Update.esm') = 0) or
-            (CompareStr(pluginName, 'Dawnguard.esm') = 0) or
-            (CompareStr(pluginName, 'HearthFires.esm') = 0) or
-            (CompareStr(pluginName, 'Dragonborn.esm') = 0) or
-            (CompareStr(pluginName, 'ccBGSSSE001-Fish.esm') = 0) or
-            (CompareStr(pluginName, 'ccQDRSSE001-SurvivalMode.esl') = 0) or
-            (CompareStr(pluginName, 'ccBGSSSE037-Curios.esl') = 0) or
-            (CompareStr(pluginName, 'ccBGSSSE025-AdvDSGS.esm') = 0) or
-            (CompareStr(pluginName, '_ResourcePack.esl') = 0);
-End;
+function IsOfficialMaster(fileName: string): boolean;
+begin
+  Result :=
+    SameText(fileName, 'Skyrim.esm') or
+    SameText(fileName, 'Update.esm') or
+    SameText(fileName, 'Dawnguard.esm') or
+    SameText(fileName, 'HearthFires.esm') or
+    SameText(fileName, 'Dragonborn.esm') or
+    SameText(fileName, '_ResourcePack.esl') or
+    SameText(fileName, 'ccBGSSSE001-Fish.esm') or
+    SameText(fileName, 'ccBGSSSE025-AdvDSGS.esm')or
+    SameText(fileName, 'ccBGSSSE037-Curios.esl') or
+    SameText(fileName, 'ccQDRSSE001-SurvivalMode.esl');
+end;
 
 function RemoveLeadingZeros(const s: string): string;
 var
