@@ -9,7 +9,7 @@ function ExtractStringListValue(const valueString: string; const key: string): s
 function ShowCheckboxForm(const options, disableOpts: TStringList; caption: string): Boolean;
 function AskInputDialog(const title, prompt: string; var resultStr: string): boolean;
 function AskFormID(const title, prompt: string; requiredLength: integer; var resultStr: string): boolean;
-function AskEditorIDPrefix(const title, prompt: string; useUnderScore: boolean; var confirmed: boolean): string;
+function AskEditorIDPrefix(const title, prompt: string; useUnderScore: boolean; var resultStr: string): boolean;
 function FormIDInputValidation(const s: string): Boolean;
 function EditorIDInputValidation(const s: string; useUnderScore: boolean): Boolean;
 function IsOfficialMaster(fileName: string): boolean;
