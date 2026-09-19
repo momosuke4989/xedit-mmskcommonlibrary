@@ -179,10 +179,12 @@ var
   edt: TEdit;
   lbl: TLabel;
   btnOK, btnCancel: TButton;
+  promptLines: TStringList;
   DialogHeight: Integer;
   LabelHeight: Integer;
-  PromptLength: Integer;
   LineCount: Integer;
+  segLineCount: Integer;
+  i: Integer;
   ButtonTop: Integer;
 begin
   Result := false;
@@ -192,9 +194,22 @@ begin
   // Calculate label height
   // --------------------------------------------------
 
-  PromptLength := Length(prompt);
+  // 明示的な改行(#13#10等)ごとに区切り、各行について折り返し行数を求めて合計する
+  promptLines := TStringList.Create;
+  try
+    promptLines.Text := prompt;
 
-  LineCount := (PromptLength + CharsPerLine - 1) div CharsPerLine;
+    LineCount := 0;
+    for i := 0 to promptLines.Count - 1 do begin
+      // 空行(明示的な改行のみの行)も1行分としてカウントするため、最低1にする
+      segLineCount := (Length(promptLines[i]) + CharsPerLine - 1) div CharsPerLine;
+      if segLineCount < 1 then
+        segLineCount := 1;
+      LineCount := LineCount + segLineCount;
+    end;
+  finally
+    promptLines.Free;
+  end;
 
   if LineCount < 1 then
     LineCount := 1;
@@ -219,9 +234,9 @@ begin
   frm := TForm.Create(nil);
   try
     frm.Caption := title;
-    frm.Width := DialogWidth;
-    frm.Height := DialogHeight;
     frm.Position := poMainFormCenter;
+    frm.ClientWidth := DialogWidth;
+    frm.ClientHeight := DialogHeight;
 
     // ------------------------------------------------
     // Prompt
