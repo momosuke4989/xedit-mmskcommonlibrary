@@ -16,6 +16,7 @@ function CreateSLValueFromRecordIDWithName(const editorID, formID, fileName, NPC
 function ExtractStringListValue(const valueString: string; const key: string): string;
 function IsNPCFemale(NPC: IInterface): boolean;
 function NPCUsesTraits(NPC: IInterface): boolean;
+function GetLinkedMasterRecord(const sourceRecord: IInterface; const path: string): IwbMainRecord;
 
 implementation
 
@@ -348,6 +349,20 @@ begin
       if GetElementNativeValues(templateFlags, 'Use Traits') <> 0 then
         Result := True;
   end;
+end;
+
+// 指定パスの要素が参照するリンク先のマスターレコードを取得する
+// 参照が設定されていない、またはオーバーライドの場合はマスターレコードを返す
+// 要素自体が存在しない場合はNilを返す
+function GetLinkedMasterRecord(const sourceRecord: IInterface; const path: string): IwbMainRecord;
+var
+  elem: IInterface;
+begin
+  Result := nil;
+  elem := ElementByPath(sourceRecord, path);
+  if not Assigned(elem) then
+    Exit;
+  Result := MasterOrSelf(LinksTo(elem));
 end;
 
 end.
