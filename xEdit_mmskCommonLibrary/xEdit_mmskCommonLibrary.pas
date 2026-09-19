@@ -8,6 +8,7 @@ function CreateSLValueFromRecordIDWithName(const editorID, formID, fileName, NPC
 function ExtractStringListValue(const valueString: string; const key: string): string;
 function ShowCheckboxForm(const options, disableOpts: TStringList; caption: string): Boolean;
 function AskInputDialog(const title, prompt: string; var resultStr: string): boolean;
+function AskEditorIDPrefix(const title, prompt: string; useUnderScore: boolean; var confirmed: boolean): string;
 function FormIDInputValidation(const s: string): Boolean;
 function EditorIDInputValidation(const s: string; useUnderScore: boolean): Boolean;
 function IsOfficialMaster(fileName: string): boolean;
@@ -170,16 +171,15 @@ end;
 // resultStr: var引数。入力された文字列を格納する(out引数はxEdit実行環境の制約で正しく機能しないため使用しない)
 // 戻り値: OKが押された場合true、Cancelまたは×で閉じた場合false
 function AskInputDialog(const title, prompt: string; var resultStr: string): boolean;
-const
-  DialogWidth = 400;
-  CharsPerLine = 55;
-  LineHeight = 18;
 var
   frm: TForm;
   edt: TEdit;
   lbl: TLabel;
   btnOK, btnCancel: TButton;
   promptLines: TStringList;
+  DialogWidth: Integer;
+  CharsPerLine: Integer;
+  LineHeight: Integer;
   DialogHeight: Integer;
   LabelHeight: Integer;
   LineCount: Integer;
@@ -189,6 +189,10 @@ var
 begin
   Result := false;
   resultStr := '';
+
+  DialogWidth := 400;
+  CharsPerLine := 55;
+  LineHeight := 18;
 
   // --------------------------------------------------
   // Calculate label height
@@ -304,23 +308,122 @@ begin
   end;
 end;
 
+// FormID入力に特化したラッパー
+// AskInputDialogによる入力とFormIDInputValidationによる判定をまとめ、
+// 判定NGの場合は自動的に再入力を促す(判定OK、またはキャンセルされるまでループ)
+// requiredLength: 桁数チェックを行う場合はその桁数を指定(0以下を指定すると桁数チェックをスキップ)
+// resultStr: 入力されたFormID文字列を格納する(var引数。戻り値がfalseの場合は空文字)
+// 戻り値: 有効な入力が得られた場合true、キャンセルされた場合false
+//
+// 注意: repeatループ内でBreak/Exitを使うと、その直後に続くif文でパーサーが
+// 壊れる既知の不具合があるため(xEdit_Scripting_Functions.md参照)、
+// このループはBreak/Exitを一切使わずif/elseのみで構成している
+function AskFormID(const title, prompt: string; requiredLength: integer; var resultStr: string): boolean;
+var
+  inputStr: string;
+  dialogOK: boolean;
+  canceled: boolean;
+  validInput: boolean;
+begin
+  Result := false;
+  inputStr := '';
+  canceled := false;
+  validInput := false;
+
+  repeat
+    dialogOK := AskInputDialog(title, prompt, inputStr);
+
+    if not dialogOK then
+      canceled := true
+    else begin
+      if inputStr = '' then begin
+        MessageDlg('Input is empty. Please reenter.', mtInformation, [mbOK], 0);
+        validInput := false;
+      end
+      else if (requiredLength > 0) and (Length(inputStr) <> requiredLength) then begin
+        MessageDlg('The number of digits entered is invalid. Please enter ' + IntToStr(requiredLength) + ' digits.', mtInformation, [mbOK], 0);
+        validInput := false;
+      end
+      else if FormIDInputValidation(inputStr) then begin
+        validInput := true;
+      end
+      else begin
+        MessageDlg('The input is invalid. Only enter valid characters (0-9, A-F).', mtInformation, [mbOK], 0);
+        validInput := false;
+      end;
+    end;
+  until canceled or validInput;
+
+  if validInput then begin
+    Result := true;
+    resultStr := inputStr;
+  end;
+end;
+
+// EditorIDプレフィックス入力に特化したラッパー
+// AskInputDialogによる入力とEditorIDInputValidationによる判定をまとめ、
+// 判定NGの場合は自動的に再入力を促す(判定OK、またはキャンセルされるまでループ)
+// resultStr: 入力されたプレフィックス文字列(Result=falseの場合は空文字、var引数で返す)
+// 戻り値: 有効な入力が得られた場合true、キャンセルされた場合false
+//
+// 注意: repeatループ内でBreak/Exitを使うと、その直後に続くif文でパーサーが
+// 壊れる既知の不具合があるため(xEdit_Scripting_Functions.md参照)、
+// このループはBreak/Exitを一切使わずif/elseのみで構成している
+function AskEditorIDPrefix(const title, prompt: string; useUnderScore: boolean; var resultStr: string): boolean;
+var
+  inputStr: string;
+  dialogOK: boolean;
+  canceled: boolean;
+  validInput: boolean;
+begin
+  Result := false;
+  inputStr := '';
+  canceled := false;
+  validInput := false;
+
+  repeat
+    dialogOK := AskInputDialog(title, prompt, inputStr);
+
+    if not dialogOK then
+      canceled := true
+    else begin
+      if inputStr = '' then begin
+        MessageDlg('Input is empty. Please reenter.', mtInformation, [mbOK], 0);
+        validInput := false;
+      end
+      else if EditorIDInputValidation(inputStr, useUnderScore) then begin
+        validInput := true;
+      end
+      else begin
+        MessageDlg('The input is invalid. Only enter valid characters.', mtInformation, [mbOK], 0);
+        validInput := false;
+      end;
+    end;
+  until canceled or validInput;
+
+  if validInput then begin
+    Result := true;
+    resultStr := inputStr;
+  end;
+end;
+
 function FormIDInputValidation(const s: string): Boolean;
 var
   i: Integer;
   ch: Char;
 begin
-  Result := true;
+  Result := false;
+
   for i := 1 to Length(s) do
   begin
     ch := s[i];
     if not ((ch >= 'A') and (ch <= 'F') or
             (ch >= 'a') and (ch <= 'f') or
             (ch >= '0') and (ch <= '9')) then
-    begin
-      Result := false;
-      Break;
-    end;
+      Exit;
   end;
+
+  Result := true;
 end;
 
 
@@ -328,31 +431,27 @@ function EditorIDInputValidation(const s: string; useUnderScore: boolean): Boole
 var
   i: Integer;
   ch: Char;
+  isValidChar: boolean;
 begin
-  Result := true;
+  Result := false;
+
   for i := 1 to Length(s) do
   begin
     ch := s[i];
-    if useUnderScore then begin
-      if not ((ch >= 'A') and (ch <= 'Z') or
-              (ch >= 'a') and (ch <= 'z') or
-              (ch >= '0') and (ch <= '9') or
-              (ch = '_')) then
-      begin
-        Result := false;
-        Break;
-      end;
-    end
-    else begin
-      if not ((ch >= 'A') and (ch <= 'Z') or
-              (ch >= 'a') and (ch <= 'z') or
-              (ch >= '0') and (ch <= '9')) then
-      begin
-        Result := false;
-        Break;
-      end;
-    end;
+
+    isValidChar :=
+      (ch >= 'A') and (ch <= 'Z') or
+      (ch >= 'a') and (ch <= 'z') or
+      (ch >= '0') and (ch <= '9');
+
+    if useUnderScore then
+      isValidChar := isValidChar or (ch = '_');
+
+    if not isValidChar then
+      Exit;
   end;
+
+  Result := true;
 end;
 
 function IsOfficialMaster(fileName: string): boolean;
