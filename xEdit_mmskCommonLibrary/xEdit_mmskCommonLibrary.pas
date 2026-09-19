@@ -3,7 +3,11 @@ unit xEdit_mmskCommonLibrary;
 interface
 
 function GetBoolSLValue(const key: string): Boolean;
+function CreateSLValueFromRecordID(const editorID, formID, fileName: string): string;
+function CreateSLValueFromRecordIDWithName(const editorID, formID, fileName, NPCName: string): string;
+function ExtractStringListValue(const valueString: string; const key: string): string;
 function ShowCheckboxForm(const options, disableOpts: TStringList; caption: string): Boolean;
+function AskInputDialog(const title, prompt: string; var resultStr: string): boolean;
 function FormIDInputValidation(const s: string): Boolean;
 function EditorIDInputValidation(const s: string; useUnderScore: boolean): Boolean;
 function IsOfficialMaster(fileName: string): boolean;
@@ -11,9 +15,6 @@ function ExtractLocalFormIDHex(const fullFormIDHex: string): string;
 function RemoveLeadingZeros(const s: string): string;
 function PadLeftZero(const s: string; targetLength: Integer): string;
 function FindRecordByRecordID(const recordID, signature: string; useFormID: boolean): IwbMainRecord;
-function CreateSLValueFromRecordID(const editorID, formID, fileName: string): string;
-function CreateSLValueFromRecordIDWithName(const editorID, formID, fileName, NPCName: string): string;
-function ExtractStringListValue(const valueString: string; const key: string): string;
 function IsNPCFemale(npc: IInterface): boolean;
 function IsNPCUsingTraits(npc: IInterface): boolean;
 function GetLinkedMasterRecord(const sourceRecord: IInterface; const path: string): IwbMainRecord;
@@ -161,6 +162,130 @@ begin
     end;
   finally
     form.Free;
+  end;
+end;
+
+// 汎用文字列入力ダイアログ
+// 判定処理は一切行わず、UI表示と入力値の受け渡しのみを担当する
+// resultStr: var引数。入力された文字列を格納する(out引数はxEdit実行環境の制約で正しく機能しないため使用しない)
+// 戻り値: OKが押された場合true、Cancelまたは×で閉じた場合false
+function AskInputDialog(const title, prompt: string; var resultStr: string): boolean;
+const
+  DialogWidth = 400;
+  CharsPerLine = 55;
+  LineHeight = 18;
+var
+  frm: TForm;
+  edt: TEdit;
+  lbl: TLabel;
+  btnOK, btnCancel: TButton;
+  DialogHeight: Integer;
+  LabelHeight: Integer;
+  PromptLength: Integer;
+  LineCount: Integer;
+  ButtonTop: Integer;
+begin
+  Result := false;
+  resultStr := '';
+
+  // --------------------------------------------------
+  // Calculate label height
+  // --------------------------------------------------
+
+  PromptLength := Length(prompt);
+
+  LineCount := (PromptLength + CharsPerLine - 1) div CharsPerLine;
+
+  if LineCount < 1 then
+    LineCount := 1;
+
+  LabelHeight := LineCount * LineHeight;
+
+  // --------------------------------------------------
+  // Calculate dialog height
+  // --------------------------------------------------
+
+  ButtonTop := 20 + LabelHeight + 30;
+
+  DialogHeight := ButtonTop + 50;
+
+  if DialogHeight < 150 then
+    DialogHeight := 150;
+
+  // --------------------------------------------------
+  // Create form
+  // --------------------------------------------------
+
+  frm := TForm.Create(nil);
+  try
+    frm.Caption := title;
+    frm.Width := DialogWidth;
+    frm.Height := DialogHeight;
+    frm.Position := poMainFormCenter;
+
+    // ------------------------------------------------
+    // Prompt
+    // ------------------------------------------------
+
+    lbl := TLabel.Create(frm);
+    lbl.Parent := frm;
+    lbl.Left := 10;
+    lbl.Top := 10;
+    lbl.Width := DialogWidth - 30;
+    lbl.Height := LabelHeight;
+    lbl.AutoSize := false;
+    lbl.WordWrap := true;
+    lbl.Caption := prompt;
+
+    // ------------------------------------------------
+    // Input box
+    // ------------------------------------------------
+
+    edt := TEdit.Create(frm);
+    edt.Parent := frm;
+    edt.Left := 10;
+    edt.Top := 20 + LabelHeight;
+    edt.Width := DialogWidth - 30;
+    edt.Height := 23;
+    edt.Text := '';
+
+    // ------------------------------------------------
+    // OK button
+    // ------------------------------------------------
+
+    btnOK := TButton.Create(frm);
+    btnOK.Parent := frm;
+    btnOK.Caption := 'OK';
+    btnOK.Width := 75;
+    btnOK.Height := 25;
+    btnOK.Left := (DialogWidth div 2) - 82;
+    btnOK.Top := ButtonTop;
+    btnOK.ModalResult := mrOk;
+
+    // ------------------------------------------------
+    // Cancel button
+    // ------------------------------------------------
+
+    btnCancel := TButton.Create(frm);
+    btnCancel.Parent := frm;
+    btnCancel.Caption := 'Cancel';
+    btnCancel.Width := 75;
+    btnCancel.Height := 25;
+    btnCancel.Left := (DialogWidth div 2) + 7;
+    btnCancel.Top := ButtonTop;
+    btnCancel.ModalResult := mrCancel;
+
+    // ------------------------------------------------
+    // Show
+    // ------------------------------------------------
+
+    if frm.ShowModal = mrOk then begin
+      Result := true;
+      resultStr := edt.Text;
+    end;
+
+  finally
+    frm.Free;
   end;
 end;
 
