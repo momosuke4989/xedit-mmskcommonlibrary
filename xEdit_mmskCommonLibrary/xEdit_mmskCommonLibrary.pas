@@ -14,8 +14,8 @@ function FindRecordByRecordID(const recordID, signature: string; useFormID: bool
 function CreateSLValueFromRecordID(const editorID, formID, fileName: string): string;
 function CreateSLValueFromRecordIDWithName(const editorID, formID, fileName, NPCName: string): string;
 function ExtractStringListValue(const valueString: string; const key: string): string;
-function IsNPCFemale(NPC: IInterface): boolean;
-function NPCUsesTraits(NPC: IInterface): boolean;
+function IsNPCFemale(npc: IInterface): boolean;
+function IsNPCUsingTraits(npc: IInterface): boolean;
 function GetLinkedMasterRecord(const sourceRecord: IInterface; const path: string): IwbMainRecord;
 
 implementation
@@ -326,25 +326,25 @@ begin
 
 end;
 
-function IsNPCFemale(NPC: IInterface): boolean;
+function IsNPCFemale(npc: IInterface): boolean;
 var
-  NPCFlags: IInterface;
+  npcFlags: IInterface;
 begin
   Result := False;
-  if Assigned(NPC) then begin
-    NPCFlags := ElementByPath(NPC, 'ACBS - Configuration');
-    if GetElementEditValues(NPCFlags, 'Flags\Female') = 1 then
+  if Assigned(npc) then begin
+    npcFlags := ElementByPath(npc, 'ACBS - Configuration');
+    if GetElementEditValues(npcFlags, 'Flags\Female') = 1 then
       Result := True;
   end;
 end;
 
-function NPCUsesTraits(NPC: IInterface): boolean;
+function IsNPCUsingTraits(npc: IInterface): boolean;
 var
   templateFlags: IInterface;
 begin
   Result := False;
-  if Assigned(NPC) then begin
-    templateFlags := ElementByPath(NPC, 'ACBS - Configuration\Template Flags');
+  if Assigned(npc) then begin
+    templateFlags := ElementByPath(npc, 'ACBS - Configuration\Template Flags');
     if Assigned(templateFlags) then
       if GetElementNativeValues(templateFlags, 'Use Traits') <> 0 then
         Result := True;
